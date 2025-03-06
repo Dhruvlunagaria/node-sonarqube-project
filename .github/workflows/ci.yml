@@ -1,0 +1,37 @@
+name: Node.js CI Pipeline with Docker
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Build Docker Image
+        run: docker build -t node-app .
+
+      - name: Run Docker Container
+        run: docker run -d -p 3000:3000 --name node-app node-app
+
+      - name: Run Tests Inside Container
+        run: docker exec node-app npm test
+
+      - name: Run ESLint Inside Container
+        run: docker exec node-app npx eslint .
+
+      - name: SonarQube Scan
+        run: |
+          docker run --rm \
+          -e SONAR_HOST_URL=${{ secrets.SONAR_HOST_URL }} \
+          -e SONAR_TOKEN=${{ secrets.SONAR_TOKEN }} \
+          node-app npx sonar-scanner \
+            -Dsonar.projectKey=your-project-key
+
